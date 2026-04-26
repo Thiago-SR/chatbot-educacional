@@ -1,25 +1,20 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+"""
+FastAPI application entry point.
+"""
 
-from app.routers import chat
+from fastapi import FastAPI
 
 app = FastAPI(
-    title="Chatbot Educacional - Cultura Afro-Brasileira",
-    description="API de um chatbot educacional com RAG sobre cultura afro-brasileira.",
+    title="Educational Chatbot — Afro-Brazilian Culture",
+    description="RAG-powered chatbot API focused on Afro-Brazilian culture.",
     version="0.1.0",
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.include_router(chat.router)
-
 
 @app.get("/")
-async def root():
-    return {"message": "Chatbot Educacional - Cultura Afro-Brasileira"}
+async def root() -> dict:
+    return {
+        "status": "ok",
+        "project": "chatbot-educacional",
+        "version": "0.1.0",
+    }
