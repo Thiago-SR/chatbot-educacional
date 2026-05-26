@@ -16,6 +16,35 @@ from app.db.models import Base
 
 logger = logging.getLogger(__name__)
 
+# Legacy schema used Portuguese column names; map them to English.
+_LEGACY_COLUMN_RENAMES: tuple[tuple[str, str, str], ...] = (
+    ("documents", "titulo", "title"),
+    ("documents", "criado_em", "created_at"),
+    ("chunks", "conteudo", "content"),
+    ("chunks", "pagina", "page"),
+    ("chunks", "criado_em", "created_at"),
+)
+
+
+async def migrate_legacy_column_names(engine) -> None:
+    """Rename Portuguese columns to English if an older schema is detected."""
+    async with engine.begin() as conn:
+        for table, old_name, new_name in _LEGACY_COLUMN_RENAMES:
+            exists = await conn.execute(
+                text(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE table_schema = 'public' "
+                    "AND table_name = :table AND column_name = :old_name"
+                ),
+                {"table": table, "old_name": old_name},
+            )
+            if exists.scalar() is None:
+                continue
+            await conn.execute(
+                text(f'ALTER TABLE "{table}" RENAME COLUMN "{old_name}" TO "{new_name}"')
+            )
+            logger.info('Renamed column %s.%s -> %s', table, old_name, new_name)
+
 
 async def create_pgvector_extension(engine) -> None:
     """Enables the pgvector extension if it does not already exist."""
@@ -56,6 +85,7 @@ async def setup() -> None:
     try:
         logger.info("Starting database setup...")
         await create_pgvector_extension(engine)
+        await migrate_legacy_column_names(engine)
         await create_tables(engine)
         await create_vector_index(engine)
         logger.info("Database setup completed successfully.")
