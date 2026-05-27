@@ -104,6 +104,22 @@ Expected output:
 [OK] Tables found: chunks, documents
 ```
 
+### 6b. Run tests (pytest)
+
+Unit tests do not require Postgres and use a dummy tokenizer/embeddings to stay fast:
+
+```bash
+pytest -m unit
+```
+
+Integration tests use Postgres/pgvector. Start the database, ensure the schema exists, then run:
+
+```bash
+docker compose up -d postgres
+python -m app.db.pgvector_setup
+pytest -m integration
+```
+
 ### 7. Run the API locally
 
 ```bash
@@ -141,10 +157,10 @@ docker compose up --build
   - PostgreSQL + pgvector via Docker Compose
   - `documents` and `chunks` tables with `vector(384)` column
   - SELECT 1 connection test
-- [ ] **Phase 2** — Document ingestion
-  - Read PDFs from `data/documents/`
-  - Chunking and embedding generation (sentence-transformers)
-  - Store vectors in pgvector
+- [x] **Phase 2** — Document ingestion
+  - Read PDFs from `data/documents/` (via `scripts/run_ingestion.py`)
+  - Chunking (token windows, 500/50 by default)
+  - Embedding generation and persistence in pgvector
 - [ ] **Phase 3** — Retrieval and RAG
   - Cosine similarity search (HNSW index)
   - Prompt assembly with retrieved context

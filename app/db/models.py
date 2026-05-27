@@ -79,7 +79,7 @@ class Chunk(Base):
     embedding: Mapped[list[float]] = mapped_column(Vector(384), nullable=False)
 
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)  # position within the document
-    page: Mapped[int | None] = mapped_column(Integer, nullable=True)   # source page number
+    page: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
