@@ -1,1 +1,5 @@
-"""Pacote RAG contendo o embedder e o retriever para busca semântica."""
+"""RAG package: embedder and retriever for semantic search."""
+
+from app.rag.retriever import Retriever
+
+__all__ = ["Retriever"]

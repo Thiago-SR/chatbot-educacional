@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()  # Carrega variáveis do .env antes de importar app.config
 
 from app.db.session import async_session_factory
-from app.rag.embedder import Embedder, get_embedder
+from app.embedder import embed_text
 from app.rag.retriever import Retriever
 
 
@@ -26,13 +26,12 @@ def format_chunk(chunk: dict, index: int) -> str:
     return (
         f"{index}. score={chunk['score']:.4f} filename={chunk['filename']} "
         f"chunk_index={chunk['chunk_index']}\n"
-        f"   {chunk['content'][:280].replace('\n', ' ')}"
+        f"   {chunk['content'].replace(chr(10), ' ')}"
     )
 
 
 async def main() -> None:
     load_dotenv()  # Garante leitura das variáveis do .env
-    embedder = get_embedder()
 
     async with async_session_factory() as session:
         retriever = Retriever(session)
@@ -40,7 +39,7 @@ async def main() -> None:
 
         for pergunta in QUESTOES:
             print(f"Pergunta: {pergunta}")
-            query_embedding = embedder.embed_text(pergunta)
+            query_embedding = embed_text(pergunta)
             chunks = await retriever.search(query_embedding, top_k=5, threshold=0.0)
 
             if chunks:

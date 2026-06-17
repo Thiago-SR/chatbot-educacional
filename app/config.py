@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://chatbot:chatbot123@localhost:5432/chatbot_edu"
 
-    # Groq (LLM)
-    GROQ_API_KEY: str
+    # Groq (LLM) — optional until chat phase is implemented
+    GROQ_API_KEY: str | None = None
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # Embeddings (local model, no API cost)

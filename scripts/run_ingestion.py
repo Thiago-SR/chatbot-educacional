@@ -70,7 +70,8 @@ async def ingest_pdf(
         )
         return len(pages), len(text_chunks)
 
-    assert session is not None
+    if session is None:
+        raise ValueError("Database session is required for non-dry-run ingestion")
     await _delete_existing_by_filename(session, filename)
 
     t0 = time.perf_counter()
@@ -148,7 +149,7 @@ async def run_ingestion(
                         await session.commit()
                 total_pages += pages
                 total_chunks += chunks
-            except Exception:
+            except (OSError, RuntimeError, ValueError):
                 logger.exception("Failed to ingest %s", pdf_path.name)
                 errors += 1
     finally:

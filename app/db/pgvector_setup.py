@@ -9,7 +9,7 @@ import asyncio
 import logging
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from app.config import settings
 from app.db.models import Base
@@ -26,7 +26,7 @@ _LEGACY_COLUMN_RENAMES: tuple[tuple[str, str, str], ...] = (
 )
 
 
-async def migrate_legacy_column_names(engine) -> None:
+async def migrate_legacy_column_names(engine: AsyncEngine) -> None:
     """Rename Portuguese columns to English if an older schema is detected."""
     async with engine.begin() as conn:
         for table, old_name, new_name in _LEGACY_COLUMN_RENAMES:
@@ -46,21 +46,21 @@ async def migrate_legacy_column_names(engine) -> None:
             logger.info('Renamed column %s.%s -> %s', table, old_name, new_name)
 
 
-async def create_pgvector_extension(engine) -> None:
+async def create_pgvector_extension(engine: AsyncEngine) -> None:
     """Enables the pgvector extension if it does not already exist."""
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         logger.info("pgvector extension enabled.")
 
 
-async def create_tables(engine) -> None:
+async def create_tables(engine: AsyncEngine) -> None:
     """Creates all tables defined in the models."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         logger.info("Tables created successfully.")
 
 
-async def create_vector_index(engine) -> None:
+async def create_vector_index(engine: AsyncEngine) -> None:
     """
     Creates an HNSW index on the embedding column for fast similarity searches.
     HNSW is more efficient than IVFFlat for collections up to ~1M vectors.

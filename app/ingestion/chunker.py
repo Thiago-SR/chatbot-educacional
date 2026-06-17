@@ -96,4 +96,5 @@ def _majority_page(pages: list[int]) -> int | None:
     counts: dict[int, int] = {}
     for p in pages:
         counts[p] = counts.get(p, 0) + 1
-    return max(counts, key=counts.get)
+    # Tie-break by lowest page number for deterministic results
+    return max(counts, key=lambda k: (counts[k], -k))

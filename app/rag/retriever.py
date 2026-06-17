@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import logging
+import math
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+logger = logging.getLogger(__name__)
+
+EXPECTED_VECTOR_DIM = 384
+
 
 class Retriever:
-    """Implementa a busca semântica no banco de dados usando pgvector."""
+    """Semantic search against pgvector."""
 
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -46,6 +53,7 @@ class Retriever:
             },
         )
         rows = result.mappings().all()
+        logger.debug("Retriever returned %d results (top_k=%d, threshold=%.2f)", len(rows), top_k, threshold)
 
         return [
             {
@@ -61,4 +69,11 @@ class Retriever:
     @staticmethod
     def _format_vector(vector: list[float]) -> str:
         """Formata o vetor em string para um bind compatível com pgvector."""
+        if len(vector) != EXPECTED_VECTOR_DIM:
+            raise ValueError(
+                f"Expected {EXPECTED_VECTOR_DIM}-dim vector, got {len(vector)}"
+            )
+        for v in vector:
+            if not math.isfinite(v):
+                raise ValueError(f"Vector contains non-finite value: {v}")
         return "[" + ",".join(str(float(x)) for x in vector) + "]"

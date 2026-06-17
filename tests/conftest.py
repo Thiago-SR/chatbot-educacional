@@ -9,10 +9,6 @@ import pytest
 # ---------------------------------------------------------------------------
 # Test environment defaults
 # ---------------------------------------------------------------------------
-#
-# app/config.py instantiates Settings at import time and GROQ_API_KEY is required.
-# Ensure it exists before any app imports happen.
-os.environ.setdefault("GROQ_API_KEY", "test")
 
 # Make chunking faster/deterministic for tests.
 os.environ.setdefault("CHUNK_SIZE", "50")

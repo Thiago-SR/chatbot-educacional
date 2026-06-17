@@ -11,7 +11,7 @@ An interactive RAG (Retrieval-Augmented Generation) chatbot dedicated to spreadi
 | ORM / async | SQLAlchemy 2 + asyncpg |
 | Configuration | pydantic-settings |
 | LLM (future phase) | Groq API (`llama-3.3-70b-versatile`) |
-| Embeddings (future phase) | sentence-transformers `paraphrase-multilingual-MiniLM-L12-v2` (384d) |
+| Embeddings | sentence-transformers `paraphrase-multilingual-MiniLM-L12-v2` (384d) |
 
 ## Project structure
 
@@ -19,21 +19,40 @@ An interactive RAG (Retrieval-Augmented Generation) chatbot dedicated to spreadi
 chatbot-educacional/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py               # FastAPI entry point
+│   ├── main.py               # FastAPI entry point (lifespan, CORS, health check)
 │   ├── config.py             # Settings via pydantic-settings
-│   └── db/
+│   ├── embedder.py           # Unified sentence-transformer embeddings (384d)
+│   ├── db/
+│   │   ├── __init__.py
+│   │   ├── models.py         # Tables: documents, chunks (vector 384d)
+│   │   ├── session.py        # Async engine + session factory (pooled)
+│   │   └── pgvector_setup.py # Creates extension, tables and HNSW index
+│   ├── ingestion/
+│   │   ├── __init__.py
+│   │   ├── pdf_loader.py     # PDF text extraction via PyMuPDF
+│   │   ├── chunker.py        # Token-based sliding window chunking
+│   │   └── embedder.py       # Re-exports from app.embedder
+│   └── rag/
 │       ├── __init__.py
-│       ├── models.py         # Tables: documents, chunks (vector 384d)
-│       └── pgvector_setup.py # Creates extension, tables and HNSW index
+│       ├── retriever.py      # Cosine similarity search via pgvector
+│       └── embedder.py       # Re-exports from app.embedder
 ├── scripts/
+│   ├── run_ingestion.py      # CLI: ingest PDFs into the database
 │   └── test_db_connection.py # Validates SELECT 1 + vector extension + tables
+├── tests/
+│   ├── conftest.py           # Shared fixtures (DummyTokenizer, make_pdf)
+│   ├── test_ingestion_unit.py
+│   ├── test_ingestion_db_integration.py
+│   └── test_retriever_manual.py
 ├── data/
-│   └── documents/            # PDFs for ingestion (future phase)
+│   └── documents/            # PDFs for ingestion
 ├── .env.example
 ├── .gitignore
 ├── Dockerfile
+├── entrypoint.sh             # DB setup + app start for Docker
 ├── docker-compose.yml
-└── requirements.txt
+├── requirements.txt          # Production dependencies
+└── requirements-dev.txt      # Dev/test dependencies
 ```
 
 ## Setup — step by step
@@ -54,7 +73,11 @@ source venv/bin/activate
 ### 2. Install dependencies
 
 ```bash
+# Production only
 pip install -r requirements.txt
+
+# Development (includes test tools)
+pip install -r requirements-dev.txt
 ```
 
 ### 3. Configure environment variables
@@ -67,7 +90,7 @@ copy .env.example .env
 cp .env.example .env
 ```
 
-Edit `.env` and fill in at least `GROQ_API_KEY` (required for the chat phase; the placeholder value is fine during the environment and DB phases).
+Edit `.env` as needed. `GROQ_API_KEY` is optional until the chat phase is implemented.
 
 ### 4. Start the database
 
@@ -161,8 +184,10 @@ docker compose up --build
   - Read PDFs from `data/documents/` (via `scripts/run_ingestion.py`)
   - Chunking (token windows, 500/50 by default)
   - Embedding generation and persistence in pgvector
-- [ ] **Phase 3** — Retrieval and RAG
-  - Cosine similarity search (HNSW index)
-  - Prompt assembly with retrieved context
+- [ ] **Phase 3** — Retrieval and RAG (in progress)
+  - [x] Cosine similarity search (HNSW index) — `app/rag/retriever.py`
+  - [x] Unified embedder with normalized vectors — `app/embedder.py`
+  - [ ] `POST /search/` API endpoint
+  - [ ] Prompt assembly with retrieved context
 - [ ] **Phase 4** — Chat with Groq
   - `POST /chat/` endpoint integrated with the RAG + Groq pipeline
